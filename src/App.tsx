@@ -117,7 +117,7 @@ export default function App() {
   useEffect(() => {
     return () => {
       if (pdfUrl) {
-        URL.revokeObjectURL(pdfUrl);
+        URL.revokeObjectURL(pdfUrl.split('#')[0]);
       }
     };
   }, [pdfUrl]);
@@ -441,16 +441,49 @@ export default function App() {
   // PDF handlers
   const handleSelectPdfFile = (file: File) => {
     if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
+      URL.revokeObjectURL(pdfUrl.split('#')[0]);
     }
-    const url = URL.createObjectURL(file);
+    const blobUrl = URL.createObjectURL(file);
+    const url = `${blobUrl}#navpanes=0&view=FitH`;
     setPdfUrl(url);
     setPdfName(file.name);
+
+    const title = file.name.replace(/\.pdf$/i, '').trim();
+    if (!title) return;
+
+    setWorkspace((prev) => {
+      const normalizedTitle = title.toLocaleLowerCase();
+      const matchingBook = prev.books.find(
+        (book) => book.title.trim().toLocaleLowerCase() === normalizedTitle,
+      );
+
+      if (matchingBook) {
+        return {
+          ...prev,
+          activeBookId: matchingBook.id,
+        };
+      }
+
+      const newBook: Book = {
+        id: generateId('book'),
+        title,
+        author: '',
+        totalPages: 250,
+        currentPage: 0,
+        createdAt: new Date().toISOString(),
+      };
+
+      return {
+        ...prev,
+        books: [newBook, ...prev.books],
+        activeBookId: newBook.id,
+      };
+    });
   };
 
   const handleClosePdfFile = () => {
     if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
+      URL.revokeObjectURL(pdfUrl.split('#')[0]);
     }
     setPdfUrl(null);
     setPdfName(null);

@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
-import { FileText, Upload, X } from 'lucide-react';
+import { Contrast, FileText, Upload, X } from 'lucide-react';
 
 interface PdfViewerPaneProps {
   pdfUrl: string | null;
@@ -17,6 +17,7 @@ export function PdfViewerPane({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [invertPdf, setInvertPdf] = useState(false);
 
   const handleFile = (file: File | undefined) => {
     if (!file) return;
@@ -72,6 +73,20 @@ export function PdfViewerPane({
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
+                onClick={() => setInvertPdf((value) => !value)}
+                aria-pressed={invertPdf}
+                title={invertPdf ? 'Tắt đảo màu PDF' : 'Bật đảo màu PDF'}
+                className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                  invertPdf
+                    ? 'border-[#D97706]/60 bg-[#D97706]/15 text-[#FBBF24]'
+                    : 'border-[#262A34] bg-[#181B20] text-[#CBD5E1] hover:text-[#E2E8F0]'
+                }`}
+              >
+                <Contrast className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Đảo màu PDF</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="rounded-md border border-[#262A34] bg-[#181B20] px-2.5 py-1 text-xs font-medium text-[#CBD5E1] hover:text-[#E2E8F0] transition-colors cursor-pointer whitespace-nowrap"
               >
@@ -92,6 +107,9 @@ export function PdfViewerPane({
             src={pdfUrl}
             title={pdfName || 'Trình đọc PDF Tĩnh Đọc'}
             className="h-full w-full flex-1 bg-[#0F1115] border-0"
+            style={{
+              filter: invertPdf ? 'invert(0.88) hue-rotate(180deg)' : 'none',
+            }}
           />
         </>
       ) : (

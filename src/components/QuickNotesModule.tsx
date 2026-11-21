@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent, type RefObject } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type RefObject } from 'react';
 import { Download, FileJson, Search, Trash2 } from 'lucide-react';
 import type { Book, NoteCategory, ReadingNote } from '../types/reading';
 
@@ -69,6 +69,13 @@ export function QuickNotesModule({
   const [textInput, setTextInput] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    setPageInput(activeBook.currentPage > 0 ? String(activeBook.currentPage) : '');
+    setTextInput('');
+    setActiveFilter('all');
+    setSearchQuery('');
+  }, [activeBook.id, activeBook.currentPage]);
 
   const liveDetection = useMemo(() => detectPrefixCategory(textInput), [textInput]);
 
