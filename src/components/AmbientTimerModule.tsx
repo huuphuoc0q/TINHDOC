@@ -88,7 +88,7 @@ export function AmbientTimerModule({
   return (
     <section
       aria-label="Trạm Âm Thanh và Nhịp Đọc"
-      className={`rounded-xl border border-[#262A34] bg-[#181B20] ${compact ? 'p-4' : 'p-5'} flex flex-col gap-4`}
+      className={`rounded-xl border border-[#262A34] bg-[#181B20] ${compact ? 'p-3' : 'p-5'} flex flex-col ${compact ? 'gap-2.5' : 'gap-4'}`}
     >
       {/* Header */}
       <div className={`flex items-center gap-2 ${compact ? 'justify-end' : 'justify-between'}`}>

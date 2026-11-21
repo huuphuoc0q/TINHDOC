@@ -141,16 +141,14 @@ export function ReadingPacerModule({
     <section
       aria-label="Đo Nhịp Độ và Dự Báo Hoàn Thành"
       className={`rounded-xl border border-[#262A34] bg-[#181B20] ${
-        compact ? 'p-4' : 'p-5'
-      } flex flex-col gap-3.5`}
+        compact ? 'p-3' : 'p-5'
+      } flex flex-col ${compact ? 'gap-2.5' : 'gap-3.5'}`}
     >
       {/* Header + Book Switcher */}
-      <div className={`flex items-center gap-2 ${compact ? 'justify-end' : 'justify-between'}`}>
-        {!compact && (
-          <h2 className="text-sm font-semibold text-[#E2E8F0] tracking-wide">
-            Nhịp Độ & Dự Báo
-          </h2>
-        )}
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="whitespace-nowrap text-sm font-semibold text-[#E2E8F0] tracking-wide">
+          Nhịp Độ & Dự Báo
+        </h2>
 
         <div className="flex items-center gap-1.5 flex-wrap justify-end">
           <button

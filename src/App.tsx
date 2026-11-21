@@ -20,6 +20,12 @@ import type {
 } from './types/reading';
 import { audioEngine } from './utils/audioEngine';
 import {
+  clearPdfFromIndexedDb,
+  getPdfPageCount,
+  loadPdfFromIndexedDb,
+  savePdfToIndexedDb,
+} from './utils/pdfStorage';
+import {
   exportBookBackupJson,
   exportBookNotesMarkdown,
   generateId,
@@ -121,6 +127,69 @@ export default function App() {
       }
     };
   }, [pdfUrl]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void loadPdfFromIndexedDb()
+      .then(async (stored) => {
+        if (!stored || cancelled) return;
+        const blobUrl = URL.createObjectURL(stored.file);
+        if (cancelled) {
+          URL.revokeObjectURL(blobUrl);
+          return;
+        }
+        setPdfUrl(`${blobUrl}#navpanes=0&view=FitH`);
+        setPdfName(stored.name);
+
+        const title = stored.name.replace(/\.pdf$/i, '').trim();
+        const pageCount = await getPdfPageCount(stored.file).catch(() => 250);
+        if (cancelled) return;
+
+        setWorkspace((prev) => {
+          const matchingBook = prev.books.find(
+            (book) => book.title.trim().toLocaleLowerCase() === title.toLocaleLowerCase(),
+          );
+          if (matchingBook) {
+            return {
+              ...prev,
+              activeBookId: matchingBook.id,
+              books: prev.books.map((book) =>
+                book.id === matchingBook.id
+                  ? {
+                      ...book,
+                      totalPages: pageCount,
+                      currentPage: Math.min(book.currentPage, pageCount),
+                    }
+                  : book,
+              ),
+            };
+          }
+          if (!title) return prev;
+
+          const newBook: Book = {
+            id: generateId('book'),
+            title,
+            author: '',
+            totalPages: pageCount,
+            currentPage: 0,
+            createdAt: new Date().toISOString(),
+          };
+          return {
+            ...prev,
+            books: [newBook, ...prev.books],
+            activeBookId: newBook.id,
+          };
+        });
+      })
+      .catch(() => {
+        // IndexedDB may be unavailable in restricted browser contexts.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Timer tick interval
   useEffect(() => {
@@ -339,6 +408,21 @@ export default function App() {
     }));
   };
 
+  const handlePasteQuote = (content: string) => {
+    const newNote: ReadingNote = {
+      id: generateId('note'),
+      bookId: activeBook.id,
+      page: activeBook.currentPage > 0 ? activeBook.currentPage : null,
+      category: 'quote',
+      content,
+      createdAt: new Date().toISOString(),
+    };
+    setWorkspace((prev) => ({
+      ...prev,
+      notes: [newNote, ...prev.notes],
+    }));
+  };
+
   const handleDeleteNote = (noteId: string) => {
     setWorkspace((prev) => ({
       ...prev,
@@ -439,7 +523,7 @@ export default function App() {
   };
 
   // PDF handlers
-  const handleSelectPdfFile = (file: File) => {
+  const handleSelectPdfFile = async (file: File) => {
     if (pdfUrl) {
       URL.revokeObjectURL(pdfUrl.split('#')[0]);
     }
@@ -447,9 +531,13 @@ export default function App() {
     const url = `${blobUrl}#navpanes=0&view=FitH`;
     setPdfUrl(url);
     setPdfName(file.name);
+    await savePdfToIndexedDb(file).catch(() => {
+      // The PDF remains usable in memory if IndexedDB is unavailable.
+    });
 
     const title = file.name.replace(/\.pdf$/i, '').trim();
     if (!title) return;
+    const pageCount = await getPdfPageCount(file).catch(() => 250);
 
     setWorkspace((prev) => {
       const normalizedTitle = title.toLocaleLowerCase();
@@ -461,6 +549,15 @@ export default function App() {
         return {
           ...prev,
           activeBookId: matchingBook.id,
+          books: prev.books.map((book) =>
+            book.id === matchingBook.id
+              ? {
+                  ...book,
+                  totalPages: pageCount,
+                  currentPage: Math.min(book.currentPage, pageCount),
+                }
+              : book,
+          ),
         };
       }
 
@@ -468,7 +565,7 @@ export default function App() {
         id: generateId('book'),
         title,
         author: '',
-        totalPages: 250,
+        totalPages: pageCount,
         currentPage: 0,
         createdAt: new Date().toISOString(),
       };
@@ -487,6 +584,7 @@ export default function App() {
     }
     setPdfUrl(null);
     setPdfName(null);
+    void clearPdfFromIndexedDb();
   };
 
   const toggleSidebarPanel = (panel: SidebarPanelId) => {
@@ -566,6 +664,7 @@ export default function App() {
                 noteInputRef={noteInputRef}
                 onAddNote={handleAddNote}
                 onDeleteNote={handleDeleteNote}
+                onPasteQuote={handlePasteQuote}
                 onExportMarkdown={() =>
                   exportBookNotesMarkdown(activeBook, activeNotes, activePins)
                 }
@@ -618,6 +717,7 @@ export default function App() {
                     noteInputRef={noteInputRef}
                     onAddNote={handleAddNote}
                     onDeleteNote={handleDeleteNote}
+                    onPasteQuote={handlePasteQuote}
                     onExportMarkdown={() =>
                       exportBookNotesMarkdown(activeBook, activeNotes, activePins)
                     }

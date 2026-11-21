@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type RefObject } from 'react';
-import { Download, FileJson, Search, Trash2 } from 'lucide-react';
+import { ClipboardPaste, Download, FileJson, Search, Trash2 } from 'lucide-react';
 import type { Book, NoteCategory, ReadingNote } from '../types/reading';
 
 interface QuickNotesModuleProps {
@@ -8,6 +8,7 @@ interface QuickNotesModuleProps {
   noteInputRef: RefObject<HTMLInputElement | null>;
   onAddNote: (page: number | null, category: NoteCategory, content: string) => void;
   onDeleteNote: (noteId: string) => void;
+  onPasteQuote: (content: string) => void;
   onExportMarkdown: () => void;
   onExportJson: () => void;
   compact?: boolean;
@@ -59,6 +60,7 @@ export function QuickNotesModule({
   noteInputRef,
   onAddNote,
   onDeleteNote,
+  onPasteQuote,
   onExportMarkdown,
   onExportJson,
   compact = false,
@@ -69,6 +71,23 @@ export function QuickNotesModule({
   const [textInput, setTextInput] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [pasteMessage, setPasteMessage] = useState<string | null>(null);
+
+  const handlePasteQuote = async () => {
+    try {
+      const clipboardText = (await navigator.clipboard.readText()).trim();
+      if (!clipboardText) {
+        setPasteMessage('Clipboard đang trống');
+        return;
+      }
+      onPasteQuote(clipboardText);
+      setPasteMessage('Đã dán trích dẫn');
+      window.setTimeout(() => setPasteMessage(null), 1800);
+    } catch {
+      setPasteMessage('Không thể đọc Clipboard');
+      window.setTimeout(() => setPasteMessage(null), 1800);
+    }
+  };
 
   useEffect(() => {
     setPageInput(activeBook.currentPage > 0 ? String(activeBook.currentPage) : '');
@@ -189,7 +208,21 @@ export function QuickNotesModule({
           >
             Lưu
           </button>
+          <button
+            type="button"
+            onClick={handlePasteQuote}
+            title="Dán trích dẫn từ Clipboard"
+            aria-label="Dán trích dẫn"
+            className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg border border-[#262A34] bg-[#181B20] text-[#FBBF24] hover:border-[#D97706]/50 transition-colors cursor-pointer"
+          >
+            <ClipboardPaste className="h-4 w-4" aria-hidden="true" />
+          </button>
         </div>
+        {pasteMessage && (
+          <p className="text-[11px] font-medium text-[#FBBF24]" role="status">
+            {pasteMessage}
+          </p>
+        )}
 
         {/* Syntax Hint & Live Category Detection */}
         <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#64748B]">
