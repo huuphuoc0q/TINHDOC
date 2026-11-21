@@ -1,0 +1,6 @@
+{
+  "name": "Tĩnh Đọc",
+  "description": "Không gian đồng hành đọc sách không xao nhưỡng — âm thanh nền Web Audio, ghi chú siêu tốc, tra cứu Wikipedia tinh gọn và dự báo tiến độ đọc.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
